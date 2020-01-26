@@ -1,0 +1,54 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29709.97
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonNetMigrate", "JsonNetMigrate\JsonNetMigrate.csproj", "{3AC1134E-5BCD-4C0A-8F7E-85C4E93E5AF4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{729EE6D9-7049-462C-A045-8E529672DCBF}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		Directory.Build.props = Directory.Build.props
+		LICENSE = LICENSE
+		README.md = README.md
+		UNLICENSE = UNLICENSE
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonNetMigrate.Tests", "JsonNetMigrate.Tests\JsonNetMigrate.Tests.csproj", "{8AB8CDD2-C331-4321-979F-85CDB477624C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Testing", "Testing", "{5A492028-28B5-4C91-ABE3-4511B9966995}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonNetMigrate.SampleConsole", "JsonNetMigrate.SampleConsole\JsonNetMigrate.SampleConsole.csproj", "{FCBBC34F-3CA8-426B-B3CF-F9EBB64385BF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3AC1134E-5BCD-4C0A-8F7E-85C4E93E5AF4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3AC1134E-5BCD-4C0A-8F7E-85C4E93E5AF4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3AC1134E-5BCD-4C0A-8F7E-85C4E93E5AF4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3AC1134E-5BCD-4C0A-8F7E-85C4E93E5AF4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8AB8CDD2-C331-4321-979F-85CDB477624C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8AB8CDD2-C331-4321-979F-85CDB477624C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8AB8CDD2-C331-4321-979F-85CDB477624C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8AB8CDD2-C331-4321-979F-85CDB477624C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FCBBC34F-3CA8-426B-B3CF-F9EBB64385BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FCBBC34F-3CA8-426B-B3CF-F9EBB64385BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCBBC34F-3CA8-426B-B3CF-F9EBB64385BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FCBBC34F-3CA8-426B-B3CF-F9EBB64385BF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8AB8CDD2-C331-4321-979F-85CDB477624C} = {5A492028-28B5-4C91-ABE3-4511B9966995}
+		{FCBBC34F-3CA8-426B-B3CF-F9EBB64385BF} = {5A492028-28B5-4C91-ABE3-4511B9966995}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F10219F7-D7D1-4B22-8A85-208B6708E08F}
+	EndGlobalSection
+EndGlobal

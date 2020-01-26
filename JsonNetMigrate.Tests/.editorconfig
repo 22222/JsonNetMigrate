@@ -1,0 +1,18 @@
+root = false
+
+[*.cs]
+
+dotnet_diagnostic.CA1034.severity = none # Nested types should not be visible
+dotnet_diagnostic.CA1707.severity = none # Identifiers should not contain underscores
+dotnet_diagnostic.CS1591.severity = none # Missing XML comment for publicly visible type or member
+
+dotnet_diagnostic.SA1005.severity = none # Single line comments should begin with single space
+dotnet_diagnostic.SA1122.severity = none # Use string.Empty for empty strings
+dotnet_diagnostic.SA1124.severity = none # Do not use regions
+dotnet_diagnostic.SA1139.severity = none # Use literal suffix notation instead of casting
+dotnet_diagnostic.SA1513.severity = none # Closing brace should be followed by blank line
+dotnet_diagnostic.SA1515.severity = none # Single-line comment should be preceded by blank line
+dotnet_diagnostic.SA1516.severity = none # Elements should be separated by blank line
+dotnet_diagnostic.SA1600.severity = none # Elements should be documented
+dotnet_diagnostic.SA1602.severity = none # Enumeration items should be documented
+dotnet_diagnostic.SA1604.severity = none # Element documentation should have summary
