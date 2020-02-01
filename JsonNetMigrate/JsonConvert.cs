@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text.Json;
 
 namespace JsonNetMigrate.Json
@@ -110,7 +109,7 @@ namespace JsonNetMigrate.Json
         /// <typeparam name="T">The type of the object to deserialize to.</typeparam>
         /// <param name="json">The JSON to deserialize.</param>
         /// <returns>The deserialized object from the JSON string.</returns>
-#if NULLABLE_ATTR
+#if !NETSTANDARD2_0
         [return: System.Diagnostics.CodeAnalysis.MaybeNull]
 #endif
         public static T DeserializeObject<T>(string json)
@@ -123,7 +122,7 @@ namespace JsonNetMigrate.Json
         /// <param name="json">The object to deserialize.</param>
         /// <param name="settings">The <see cref="JsonSerializerSettings"/> used to deserialize the object.</param>
         /// <returns>The deserialized object from the JSON string.</returns>
-#if NULLABLE_ATTR
+#if !NETSTANDARD2_0
         [return: System.Diagnostics.CodeAnalysis.MaybeNull]
 #endif
         public static T DeserializeObject<T>(string json, JsonSerializerSettings? settings)

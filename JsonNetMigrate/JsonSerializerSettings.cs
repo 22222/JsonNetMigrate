@@ -11,6 +11,9 @@ namespace JsonNetMigrate.Json
     /// </summary>
     public class JsonSerializerSettings
     {
+        private static readonly ObjectConverter DefaultObjectConverter = new ObjectConverter();
+        private static readonly DBNullConverter DefaultDBNullConverter = new DBNullConverter();
+
         /// <summary>
         /// How JSON text output is formatted.
         /// The default value is <see cref="Formatting.None" />.
@@ -43,7 +46,24 @@ namespace JsonNetMigrate.Json
         /// <summary>
         /// A JsonConverter collection that will be used during when reading and writing JSON.
         /// </summary>
-        public IList<JsonConverter> Converters { get; set; } = new List<JsonConverter>();
+#pragma warning disable CA2227 // Collection properties should be read only
+        public IList<JsonConverter> Converters
+#pragma warning restore CA2227 // Collection properties should be read only
+        {
+            get
+            {
+                if (converters == null)
+                {
+                    converters = new List<JsonConverter>();
+                }
+
+                return converters;
+            }
+
+            set => converters = value;
+        }
+
+        private IList<JsonConverter>? converters;
 
         /// <summary>
         /// Returns a <see cref="System.Text.Json.JsonSerializerOptions"/> object equivalent to this.
@@ -53,29 +73,33 @@ namespace JsonNetMigrate.Json
         {
             var options = new JsonSerializerOptions();
             options.PropertyNameCaseInsensitive = true;
+            options.AllowTrailingCommas = true;
             options.IgnoreNullValues = NullValueHandling == NullValueHandling.Ignore;
             options.WriteIndented = Formatting == Formatting.Indented;
             options.PropertyNamingPolicy = ContractResolver?.NamingStrategy?.ToPropertyNamingPolicy();
             options.DictionaryKeyPolicy = ContractResolver?.NamingStrategy?.ToDictionaryKeyPolicy();
             options.ReadCommentHandling = JsonCommentHandling.Skip;
-            options.PropertyNameCaseInsensitive = true;
-            options.AllowTrailingCommas = true;
+            options.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
 
-            if (Converters != null)
+            if (converters != null)
             {
-                foreach (var converter in Converters)
+                foreach (var converter in converters)
                 {
                     options.Converters.Add(converter);
                 }
             }
 
-            options.Converters.Add(new ObjectConverter(
-                floatParseHandling: FloatParseHandling,
-                dateParseHandling: DateParseHandling
-            ));
-            options.Converters.Add(new DBNullConverter());
+            var objectConverter = DefaultObjectConverter;
+            if (objectConverter.FloatParseHandling != FloatParseHandling || objectConverter.DateParseHandling != DateParseHandling)
+            {
+                objectConverter = new ObjectConverter(
+                    floatParseHandling: FloatParseHandling,
+                    dateParseHandling: DateParseHandling
+                );
+            }
 
-            options.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+            options.Converters.Add(objectConverter);
+            options.Converters.Add(DefaultDBNullConverter);
 
             return options;
         }
@@ -139,6 +163,7 @@ namespace JsonNetMigrate.Json
     /// </summary>
     public enum FloatParseHandling
     {
+#pragma warning disable CA1720 // Identifier contains type name
         /// <summary>
         /// Floating point numbers are parsed to <see cref="double"/>.
         /// </summary>
@@ -148,9 +173,12 @@ namespace JsonNetMigrate.Json
         /// Floating point numbers are parsed to <see cref="decimal"/>.
         /// </summary>
         Decimal = 1,
+#pragma warning restore CA1720 // Identifier contains type name
     }
 
+#pragma warning disable SA1403 // File may only contain a single namespace
     namespace Serialization
+#pragma warning restore SA1403 // File may only contain a single namespace
     {
         /// <summary>
         /// Resolves property names using camel-casing.
@@ -161,13 +189,7 @@ namespace JsonNetMigrate.Json
             /// Constructs a default <see cref="CamelCasePropertyNamesContractResolver"/>.
             /// </summary>
             public CamelCasePropertyNamesContractResolver()
-            {
-                NamingStrategy = new CamelCaseNamingStrategy
-                {
-                    ProcessDictionaryKeys = true,
-                    OverrideSpecifiedNames = true,
-                };
-            }
+                : base(namingStrategy: new CamelCaseNamingStrategy(processDictionaryKeys: true, overrideSpecifiedNames: true)) { }
         }
 
         /// <summary>
@@ -177,9 +199,18 @@ namespace JsonNetMigrate.Json
         public class DefaultContractResolver
         {
             /// <summary>
+            /// Constructs a <see cref="DefaultContractResolver"/> with the specified <see cref="NamingStrategy"/>.
+            /// </summary>
+            /// <param name="namingStrategy">The naming strategy used to resolve how property names and dictionary keys are serialized.</param>
+            public DefaultContractResolver(NamingStrategy? namingStrategy)
+            {
+                NamingStrategy = namingStrategy;
+            }
+
+            /// <summary>
             /// The naming strategy used to resolve how property names and dictionary keys are serialized.
             /// </summary>
-            public NamingStrategy? NamingStrategy { get; set; }
+            public NamingStrategy? NamingStrategy { get; }
         }
 
         /// <summary>
@@ -191,8 +222,7 @@ namespace JsonNetMigrate.Json
             /// Constructs a default <see cref="CamelCaseNamingStrategy"/>.
             /// </summary>
             public CamelCaseNamingStrategy()
-            {
-            }
+                : this(false, false) { }
 
             /// <summary>
             /// Constructs a <see cref="CamelCaseNamingStrategy"/> with the given options.
@@ -200,16 +230,11 @@ namespace JsonNetMigrate.Json
             /// <param name="processDictionaryKeys">Whether dictionary keys should be processed.</param>
             /// <param name="overrideSpecifiedNames">Whether explicitly specified property names should be processed.</param>
             public CamelCaseNamingStrategy(bool processDictionaryKeys, bool overrideSpecifiedNames)
-            {
-                ProcessDictionaryKeys = processDictionaryKeys;
-                OverrideSpecifiedNames = overrideSpecifiedNames;
-            }
+                : base(processDictionaryKeys, overrideSpecifiedNames) { }
 
             /// <inheritdoc />
             public override JsonNamingPolicy? ToPropertyNamingPolicy()
-            {
-                return JsonNamingPolicy.CamelCase;
-            }
+                => JsonNamingPolicy.CamelCase;
         }
 
         /// <summary>
@@ -218,16 +243,27 @@ namespace JsonNetMigrate.Json
         public abstract class NamingStrategy
         {
             /// <summary>
+            /// Constructs a <see cref="NamingStrategy"/> with the specified options.
+            /// </summary>
+            /// <param name="processDictionaryKeys">Whether dictionary keys should be processed.</param>
+            /// <param name="overrideSpecifiedNames">Whether explicitly specified property names should be processed.</param>
+            protected NamingStrategy(bool processDictionaryKeys, bool overrideSpecifiedNames)
+            {
+                ProcessDictionaryKeys = processDictionaryKeys;
+                OverrideSpecifiedNames = overrideSpecifiedNames;
+            }
+
+            /// <summary>
             /// Whether dictionary keys should be processed.
             /// Defaults to false.
             /// </summary>
-            public bool ProcessDictionaryKeys { get; set; }
+            public bool ProcessDictionaryKeys { get; }
 
             /// <summary>
-            /// Wwhether explicitly specified property names should be processed.
+            /// Whether explicitly specified property names should be processed.
             /// Defaults to false.
             /// </summary>
-            public bool OverrideSpecifiedNames { get; set; }
+            public bool OverrideSpecifiedNames { get; }
 
             /// <summary>
             /// Gets the serialized name for a given property name.
@@ -271,15 +307,15 @@ namespace JsonNetMigrate.Json
             }
 
             /// <summary>
-            /// Returns a <see cref="System.Text.Json.JsonNamingPolicy"/> equivalent to these settings for property names.
+            /// Returns a <see cref="System.Text.Json.JsonNamingPolicy"/> equivalent to this naming strategy for property names.
             /// </summary>
-            /// <returns>The naming policy.</returns>
+            /// <returns>The System.Text.Json naming policy.</returns>
             public abstract JsonNamingPolicy? ToPropertyNamingPolicy();
 
             /// <summary>
-            /// Returns a <see cref="System.Text.Json.JsonNamingPolicy"/> equivalent to these settings for dictionary keys.
+            /// Returns a <see cref="System.Text.Json.JsonNamingPolicy"/> equivalent to this naming strategy for dictionary keys.
             /// </summary>
-            /// <returns>The naming policy.</returns>
+            /// <returns>The System.Text.Json naming policy.</returns>
             public virtual JsonNamingPolicy? ToDictionaryKeyPolicy()
                 => ProcessDictionaryKeys ? ToPropertyNamingPolicy() : null;
         }

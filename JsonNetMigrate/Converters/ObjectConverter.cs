@@ -10,9 +10,6 @@ namespace JsonNetMigrate.Json.Converters
     /// </summary>
     public class ObjectConverter : JsonConverter<object>
     {
-        private readonly FloatParseHandling floatParseHandling;
-        private readonly DateParseHandling dateParseHandling;
-
         /// <summary>
         /// Constructs a default <see cref="ObjectConverter"/>.
         /// </summary>
@@ -26,18 +23,35 @@ namespace JsonNetMigrate.Json.Converters
         /// <param name="dateParseHandling">Specifies how date formatted strings are parsed when reading JSON text.</param>
         public ObjectConverter(FloatParseHandling floatParseHandling, DateParseHandling dateParseHandling)
         {
-            this.floatParseHandling = floatParseHandling;
-            this.dateParseHandling = dateParseHandling;
+            FloatParseHandling = floatParseHandling;
+            DateParseHandling = dateParseHandling;
         }
 
+        /// <summary>
+        /// The <see cref="Json.FloatParseHandling"/> used by this converter.
+        /// </summary>
+        public FloatParseHandling FloatParseHandling { get; }
+
+        /// <summary>
+        /// The <see cref="Json.DateParseHandling"/> used by this converter.
+        /// </summary>
+        public DateParseHandling DateParseHandling { get; }
+
         /// <inheritdoc />
-#if NULLABLE_ATTR
+#if !NETSTANDARD2_0
         [return: System.Diagnostics.CodeAnalysis.MaybeNull]
 #endif
         public override object Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)
         {
-            var tokenType = reader.TokenType;
+            while (reader.TokenType == JsonTokenType.Comment)
+            {
+                if (!reader.Read())
+                {
+                    throw new JsonException();
+                }
+            }
 
+            var tokenType = reader.TokenType;
             if (tokenType == JsonTokenType.Null)
             {
 #pragma warning disable CS8603 // Possible null reference return.
@@ -62,7 +76,7 @@ namespace JsonNetMigrate.Json.Converters
                     return valueLong;
                 }
 
-                if (floatParseHandling == FloatParseHandling.Decimal)
+                if (FloatParseHandling == FloatParseHandling.Decimal)
                 {
                     return reader.GetDecimal();
                 }
@@ -72,14 +86,14 @@ namespace JsonNetMigrate.Json.Converters
 
             if (tokenType == JsonTokenType.String)
             {
-                if (dateParseHandling == DateParseHandling.DateTimeOffset)
+                if (DateParseHandling == DateParseHandling.DateTimeOffset)
                 {
                     if (reader.TryGetDateTimeOffset(out DateTimeOffset valueDto))
                     {
                         return valueDto;
                     }
                 }
-                else if (dateParseHandling == DateParseHandling.DateTime)
+                else if (DateParseHandling == DateParseHandling.DateTime)
                 {
                     if (reader.TryGetDateTime(out DateTime valueDt))
                     {
@@ -113,6 +127,14 @@ namespace JsonNetMigrate.Json.Converters
             var list = new List<object?>();
             while (reader.Read())
             {
+                while (reader.TokenType == JsonTokenType.Comment)
+                {
+                    if (!reader.Read())
+                    {
+                        throw new JsonException();
+                    }
+                }
+
                 if (reader.TokenType == JsonTokenType.EndArray)
                 {
                     return list;
@@ -135,6 +157,14 @@ namespace JsonNetMigrate.Json.Converters
             var dictionary = new Dictionary<string, object?>();
             while (reader.Read())
             {
+                while (reader.TokenType == JsonTokenType.Comment)
+                {
+                    if (!reader.Read())
+                    {
+                        throw new JsonException();
+                    }
+                }
+
                 if (reader.TokenType == JsonTokenType.EndObject)
                 {
                     return dictionary;
@@ -160,13 +190,16 @@ namespace JsonNetMigrate.Json.Converters
         /// <inheritdoc />
         public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
         {
-            if (value is JsonElement valueJsonElement)
+            if (writer == null) throw new ArgumentNullException(nameof(writer));
+
+            if (value != null && value.GetType() == typeof(object))
             {
-                valueJsonElement.WriteTo(writer);
+                writer.WriteStartObject();
+                writer.WriteEndObject();
                 return;
             }
 
-            throw new InvalidOperationException();
+            throw new JsonException();
         }
     }
 }

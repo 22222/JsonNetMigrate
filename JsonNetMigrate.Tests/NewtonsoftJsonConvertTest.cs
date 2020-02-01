@@ -27,7 +27,6 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using Xunit;
-using Test = Xunit.FactAttribute;
 
 namespace JsonNetMigrate.Json
 {
@@ -36,7 +35,7 @@ namespace JsonNetMigrate.Json
     /// </remarks>
     public class NewtonsoftJsonConvertTest
     {
-        [Test]
+        [Fact]
         public void SerializeObjectEnsureEscapedArrayLength()
         {
             const char nonAsciiChar = (char)257;
@@ -58,42 +57,42 @@ namespace JsonNetMigrate.Json
             public string? Value { get; set; }
         }
 
-        [Test]
+        [Fact]
         public void DeserializeObject_EmptyString()
         {
             object? result = JsonConvert.DeserializeObject(string.Empty);
             Assert.Null(result);
         }
 
-        [Test]
+        [Fact]
         public void DeserializeObject_Integer()
         {
             object? result = JsonConvert.DeserializeObject("1");
             Assert.Equal(1L, result);
         }
 
-        [Test]
+        [Fact]
         public void DeserializeObject_Integer_EmptyString()
         {
             int? value = JsonConvert.DeserializeObject<int?>("");
             Assert.Null(value);
         }
 
-        [Test]
+        [Fact]
         public void DeserializeObject_Decimal_EmptyString()
         {
             decimal? value = JsonConvert.DeserializeObject<decimal?>("");
             Assert.Null(value);
         }
 
-        [Test]
+        [Fact]
         public void DeserializeObject_DateTime_EmptyString()
         {
             DateTime? value = JsonConvert.DeserializeObject<DateTime?>("");
             Assert.Null(value);
         }
 
-        [Test]
+        [Fact]
         public void SerializeObjectInvalid()
         {
             // Assert.Throws<ArgumentException>(() => JsonConvert.SerializeObject(new Version(1, 0)));
@@ -101,7 +100,7 @@ namespace JsonNetMigrate.Json
             Assert.Equal(@"{""Major"":1,""Minor"":0,""Build"":-1,""Revision"":-1,""MajorRevision"":-1,""MinorRevision"":-1}", json);
         }
 
-        [Test]
+        [Fact]
         public void GuidToString()
         {
             Guid guid = new Guid("BED7F4EA-1A96-11d2-8F08-00A0C9A6186D");
@@ -109,14 +108,14 @@ namespace JsonNetMigrate.Json
             Assert.Equal(@"""bed7f4ea-1a96-11d2-8f08-00a0c9a6186d""", json);
         }
 
-        [Test]
+        [Fact]
         public void EnumToString()
         {
             string json = JsonConvert.SerializeObject(StringComparison.CurrentCultureIgnoreCase);
             Assert.Equal("1", json);
         }
 
-        [Test]
+        [Fact]
         public void ObjectToString()
         {
             object? value;
@@ -178,7 +177,7 @@ namespace JsonNetMigrate.Json
             Assert.Equal(@"""c""", JsonConvert.SerializeObject(value));
         }
 
-        [Test]
+        [Fact]
         public void TestInvalidStrings()
         {
             Assert.Throws<JsonException>(() =>
@@ -194,7 +193,7 @@ namespace JsonNetMigrate.Json
             });
         }
 
-        [Test]
+        [Fact]
         public void DeserializeValueObjects()
         {
             int i = JsonConvert.DeserializeObject<int>("1");
@@ -212,7 +211,7 @@ namespace JsonNetMigrate.Json
             Assert.Throws<JsonException>(() => JsonConvert.DeserializeObject<object>("undefined"));
         }
 
-        [Test]
+        [Fact]
         public void FloatToString()
         {
             Assert.Equal("1.1", JsonConvert.SerializeObject(1.1));
@@ -237,7 +236,7 @@ namespace JsonNetMigrate.Json
             Assert.Throws<JsonException>(() => JsonConvert.SerializeObject(double.NaN));
         }
 
-        [Test]
+        [Fact]
         public void DecimalToString()
         {
             Assert.Equal("1.1", JsonConvert.SerializeObject(1.1m));
@@ -258,7 +257,7 @@ namespace JsonNetMigrate.Json
             Assert.Equal("-79228162514264337593543950335", JsonConvert.SerializeObject(decimal.MinValue));
         }
 
-        [Test]
+        [Fact]
         public void StringEscaping()
         {
             string v = "It's a good day\r\n\"sunshine\"";
@@ -267,7 +266,7 @@ namespace JsonNetMigrate.Json
             Assert.Equal(@"""It's a good day\r\n\""sunshine\""""", json);
         }
 
-        [Test]
+        [Fact]
         public void SerializeObjectDateTimeZoneHandling()
         {
             string json = JsonConvert.SerializeObject(
@@ -276,7 +275,7 @@ namespace JsonNetMigrate.Json
             Assert.Equal(@"""2000-01-01T01:01:01""", json);
         }
 
-        [Test]
+        [Fact]
         public void DeserializeObject()
         {
             string json = @"{
@@ -302,7 +301,7 @@ namespace JsonNetMigrate.Json
             public List<string>? ReleaseCountries { get; set; }
         }
 
-        [Test]
+        [Fact]
         public void GenericBaseClassSerialization()
         {
             string json = JsonConvert.SerializeObject(new NonGenericChildClass());

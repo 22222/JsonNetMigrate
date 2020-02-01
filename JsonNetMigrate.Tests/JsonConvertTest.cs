@@ -92,6 +92,27 @@ namespace JsonNetMigrate.Json
             JsonDeepEqualAssert.Equal(expected, actual, new JsonDeepEqualDiffOptions { DateFormatString = "yyyy-MM-ddTHH:mm:ss.fffK" });
         }
 
+        [Fact]
+        public void SerializeObject_Then_DeserializeObjectAsObject_SampleWithStringEnumConverter_ShouldMatchJsonNet()
+        {
+            var obj = CreateObject();
+            var expectedOptions = new Newtonsoft.Json.JsonSerializerSettings { Converters = new[] { new Newtonsoft.Json.Converters.StringEnumConverter() } };
+            var expectedJson = Newtonsoft.Json.JsonConvert.SerializeObject(obj, expectedOptions);
+            var expected = Newtonsoft.Json.JsonConvert.DeserializeObject(expectedJson, typeof(object), expectedOptions);
+
+            var actualOptions = new JsonSerializerSettings { Converters = new[] { new Converters.StringEnumConverter() } };
+            var actualJson = JsonConvert.SerializeObject(obj, actualOptions);
+            var actual = JsonConvert.DeserializeObject(actualJson, typeof(object), actualOptions);
+            JsonDeepEqualAssert.Equal(expected, actual, new JsonDeepEqualDiffOptions { DateFormatString = "yyyy-MM-ddTHH:mm:ss.fffK" });
+
+            actual = JsonConvert.DeserializeObject<object>(expectedJson, actualOptions);
+            JsonDeepEqualAssert.Equal(expected, actual, new JsonDeepEqualDiffOptions { DateFormatString = "yyyy-MM-ddTHH:mm:ss.fffK" });
+
+            expected = Newtonsoft.Json.JsonConvert.DeserializeObject(expectedJson, expectedOptions);
+            actual = JsonConvert.DeserializeObject(actualJson, actualOptions);
+            JsonDeepEqualAssert.Equal(expected, actual, new JsonDeepEqualDiffOptions { DateFormatString = "yyyy-MM-ddTHH:mm:ss.fffK" });
+        }
+
         private static object CreateObject()
         {
             var obj = new
@@ -128,6 +149,25 @@ namespace JsonNetMigrate.Json
                 ValueNullableTestEnum = (TestEnum?)TestEnum.Two,
             };
             return obj;
+        }
+
+        [Fact]
+        public void DeserializeObjectAsObject_JsonWithComments_ShouldMatchJsonNet()
+        {
+            const string json = @"/* Comment */{ /* Comment */
+""a"":1,
+// Comment
+""b"": // Comment
+    2,
+/* Comment */
+""c"": /* Comment */ 3,
+""d"": [ // Comment
+4/* Comment */,/* Comment */ 5 /* Comment */ ]/* Comment */
+/* Comment */}";
+
+            var expected = Newtonsoft.Json.JsonConvert.DeserializeObject(json, typeof(object));
+            var actual = JsonConvert.DeserializeObject(json, typeof(object));
+            JsonDeepEqualAssert.Equal(expected, actual);
         }
 
         [Fact]

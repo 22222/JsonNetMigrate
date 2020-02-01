@@ -5,6 +5,7 @@ root = false
 dotnet_diagnostic.CA1034.severity = none # Nested types should not be visible
 dotnet_diagnostic.CA1707.severity = none # Identifiers should not contain underscores
 dotnet_diagnostic.CS1591.severity = none # Missing XML comment for publicly visible type or member
+dotnet_diagnostic.CA2227.severity = none # Collection properties should be read only
 
 dotnet_diagnostic.SA1005.severity = none # Single line comments should begin with single space
 dotnet_diagnostic.SA1122.severity = none # Use string.Empty for empty strings

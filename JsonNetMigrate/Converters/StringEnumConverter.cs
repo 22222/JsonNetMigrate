@@ -9,7 +9,7 @@ namespace JsonNetMigrate.Json.Converters
 {
     /// <summary>
     /// An converter that extends <see cref="System.Text.Json.Serialization.JsonStringEnumConverter"/>
-    /// to add support for <see cref="System.Runtime.Serialization.EnumMemberAttribute"/> for name overrides.
+    /// to add support for <see cref="System.Runtime.Serialization.EnumMemberAttribute"/> name overrides.
     /// </summary>
     public class StringEnumConverter : JsonConverterFactory
     {
@@ -41,18 +41,18 @@ namespace JsonNetMigrate.Json.Converters
         }
 
         /// <inheritdoc />
-        public override bool CanConvert(Type typeToConvert)
+        public override bool CanConvert(Type type)
         {
-            if (typeToConvert == null) throw new ArgumentNullException(nameof(typeToConvert));
+            if (type == null) throw new ArgumentNullException(nameof(type));
 
-            return typeToConvert.IsEnum;
+            return type.IsEnum;
         }
 
         /// <inheritdoc />
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             var converter = (JsonConverter)Activator.CreateInstance(
-                type: typeof(JsonStringEnumConverter<>).MakeGenericType(typeToConvert),
+                type: typeof(GenericStringEnumConverter<>).MakeGenericType(typeToConvert),
                 bindingAttr: BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
                 args: new object?[] { namingPolicy, allowIntegerValues },
@@ -61,25 +61,20 @@ namespace JsonNetMigrate.Json.Converters
             return converter;
         }
 
-        private sealed class JsonStringEnumConverter<T> : JsonConverter<T>
+        private sealed class GenericStringEnumConverter<T> : JsonConverter<T>
             where T : struct, Enum
         {
-            private readonly JsonConverter<T> defaultConverter;
-            private readonly JsonNamingPolicy readNamingPolicy;
+            private readonly Lazy<EnumNamingPolicyCache<T>> lazyEnumNamingPolicyCache;
 
-            public JsonStringEnumConverter(JsonNamingPolicy? namingPolicy, bool allowIntegerValues)
+            public GenericStringEnumConverter(JsonNamingPolicy? namingPolicy, bool allowIntegerValues)
             {
-                var enumType = typeof(T);
-                var writeNamingPolicy = new EnumNamingPolicy(enumType: enumType, fallbackNamingPolicy: namingPolicy, purpose: NamingPolicyPurpose.Write);
-                var defaultConverterFactory = new JsonStringEnumConverter(namingPolicy: writeNamingPolicy, allowIntegerValues: allowIntegerValues);
-                this.defaultConverter = (JsonConverter<T>)defaultConverterFactory.CreateConverter(typeToConvert: enumType, options: null);
-                this.readNamingPolicy = new EnumNamingPolicy(enumType: enumType, fallbackNamingPolicy: null, purpose: NamingPolicyPurpose.Read);
+                this.lazyEnumNamingPolicyCache = new Lazy<EnumNamingPolicyCache<T>>(() => new EnumNamingPolicyCache<T>(namingPolicy, allowIntegerValues));
             }
 
             /// <inheritdoc />
             public override bool CanConvert(Type type)
             {
-                return defaultConverter.CanConvert(type);
+                return type.IsEnum;
             }
 
             /// <inheritdoc />
@@ -89,7 +84,7 @@ namespace JsonNetMigrate.Json.Converters
                 if (tokenType == JsonTokenType.String)
                 {
                     string? name = reader.GetString();
-                    string? transformedName = name != null ? readNamingPolicy.ConvertName(name) : null;
+                    string? transformedName = name != null ? lazyEnumNamingPolicyCache.Value.ReadNamingPolicy.ConvertName(name) : null;
                     if (transformedName != null && !transformedName.Equals(name, StringComparison.Ordinal))
                     {
                         if (Enum.TryParse(transformedName, out T value)
@@ -100,60 +95,101 @@ namespace JsonNetMigrate.Json.Converters
                     }
                 }
 
+                var defaultConverter = lazyEnumNamingPolicyCache.Value.DefaultJsonConverter;
                 return defaultConverter.Read(ref reader, typeToConvert, options);
             }
 
             /// <inheritdoc />
             public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
             {
+                var defaultConverter = lazyEnumNamingPolicyCache.Value.DefaultJsonConverter;
                 defaultConverter.Write(writer, value, options);
             }
         }
 
-        private sealed class EnumNamingPolicy : JsonNamingPolicy
+        private sealed class EnumNamingPolicyCache<T>
         {
-            private readonly JsonNamingPolicy? fallbackNamingPolicy;
-            private readonly Lazy<ConcurrentDictionary<string, string>?> lazyNameTransformCache;
-            private readonly Lazy<ConcurrentDictionary<string, string>?> lazyNameIgnoreCaseTransformCache;
-
-            public EnumNamingPolicy(Type enumType, JsonNamingPolicy? fallbackNamingPolicy, NamingPolicyPurpose purpose)
+            public EnumNamingPolicyCache(JsonNamingPolicy? defaultWriteNamingPolicy, bool allowIntegerValues)
             {
-                this.fallbackNamingPolicy = fallbackNamingPolicy;
-                this.lazyNameTransformCache = new Lazy<ConcurrentDictionary<string, string>?>(
-                    () => CreateNameTransformCacheOrNull(enumType, purpose, ignoreCase: false)
-                );
-                this.lazyNameIgnoreCaseTransformCache = new Lazy<ConcurrentDictionary<string, string>?>(
-                    () => purpose == NamingPolicyPurpose.Read ?
-                        CreateNameTransformCacheOrNull(enumType, purpose, ignoreCase: true)
-                        : null
-                );
+                var enumType = typeof(T);
+                var enumNameCache = new EnumNameCache(enumType, defaultWriteNamingPolicy);
+                ReadNamingPolicy = new EnumReadNamingPolicy(enumNameCache);
+
+                var writeNamingPolicy = new EnumWriteNamingPolicy(enumNameCache, defaultWriteNamingPolicy);
+                var defaultJsonConverterFactory = new JsonStringEnumConverter(namingPolicy: writeNamingPolicy, allowIntegerValues: allowIntegerValues);
+                DefaultJsonConverter = (JsonConverter<T>)defaultJsonConverterFactory.CreateConverter(typeToConvert: enumType, options: null);
+            }
+
+            public JsonNamingPolicy ReadNamingPolicy { get; }
+
+            public JsonConverter<T> DefaultJsonConverter { get; }
+        }
+
+        private sealed class EnumReadNamingPolicy : JsonNamingPolicy
+        {
+            private readonly EnumNameCache enumNameCache;
+
+            public EnumReadNamingPolicy(EnumNameCache enumNameCache)
+            {
+                this.enumNameCache = enumNameCache ?? throw new ArgumentNullException(nameof(enumNameCache));
             }
 
             /// <inheritdoc />
             public override string ConvertName(string name)
             {
-                var nameTransformCache = lazyNameTransformCache.Value;
-                if (nameTransformCache != null && nameTransformCache.TryGetValue(name, out string? transformedName))
+                var nameTransformDictionary = enumNameCache.ReadNameTransformDictionary;
+                if (nameTransformDictionary != null && nameTransformDictionary.TryGetValue(name, out string? transformedName))
                 {
                     return transformedName;
                 }
 
-                var nameIgnoreCaseTransformCache = lazyNameIgnoreCaseTransformCache.Value;
-                if (nameIgnoreCaseTransformCache != null && nameIgnoreCaseTransformCache.TryGetValue(name, out string? transformedNameIgnoreCase))
+                var nameIgnoreCaseTransformDictionary = enumNameCache.ReadNameIgnoreCaseTransformDictionary;
+                if (nameIgnoreCaseTransformDictionary != null && nameIgnoreCaseTransformDictionary.TryGetValue(name, out string? transformedNameIgnoreCase))
                 {
                     return transformedNameIgnoreCase;
                 }
 
-                return fallbackNamingPolicy?.ConvertName(name) ?? name;
+                return name;
+            }
+        }
+
+        private sealed class EnumWriteNamingPolicy : JsonNamingPolicy
+        {
+            private readonly EnumNameCache enumNameCache;
+            private readonly JsonNamingPolicy? defaultNamingPolicy;
+
+            public EnumWriteNamingPolicy(EnumNameCache enumNameCache, JsonNamingPolicy? defaultNamingPolicy)
+            {
+                this.enumNameCache = enumNameCache ?? throw new ArgumentNullException(nameof(enumNameCache));
+                this.defaultNamingPolicy = defaultNamingPolicy;
             }
 
-            private static ConcurrentDictionary<string, string>? CreateNameTransformCacheOrNull(Type enumType, NamingPolicyPurpose purpose, bool ignoreCase)
+            /// <inheritdoc />
+            public override string ConvertName(string name)
             {
-                if (enumType == null) return null;
-                if (!enumType.IsEnum) return null;
+                var nameTransformDictionary = enumNameCache.WriteNameTransformDictionary;
+                if (nameTransformDictionary != null && nameTransformDictionary.TryGetValue(name, out string? transformedName))
+                {
+                    return transformedName;
+                }
+
+                if (defaultNamingPolicy != null)
+                {
+                    return defaultNamingPolicy.ConvertName(name);
+                }
+
+                return name;
+            }
+        }
+
+        private sealed class EnumNameCache
+        {
+            public EnumNameCache(Type enumType, JsonNamingPolicy? writeNamingPolicy)
+            {
+                if (enumType == null) throw new ArgumentNullException(nameof(enumType));
+                if (!enumType.IsEnum) throw new ArgumentException($"Type {enumType.FullName} is not an enum type");
 
                 string[] names = Enum.GetNames(enumType);
-                ConcurrentDictionary<string, string>? nameTransformCache = null;
                 foreach (var name in names)
                 {
                     var fieldInfo = enumType.GetField(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
@@ -162,39 +198,73 @@ namespace JsonNetMigrate.Json.Converters
                         continue;
                     }
 
+                    string? explicitName;
                     var enumMemberAttribute = fieldInfo.GetCustomAttribute<EnumMemberAttribute>();
-                    if (enumMemberAttribute == null)
+                    if (enumMemberAttribute != null && !string.IsNullOrEmpty(enumMemberAttribute.Value))
+                    {
+                        explicitName = enumMemberAttribute.Value;
+                    }
+                    else
+                    {
+                        explicitName = null;
+                    }
+
+                    string transformedName;
+                    if (explicitName != null)
+                    {
+                        transformedName = explicitName;
+                    }
+                    else if (writeNamingPolicy != null)
+                    {
+                        transformedName = writeNamingPolicy.ConvertName(name);
+                    }
+                    else
                     {
                         continue;
                     }
 
-                    var transformedName = enumMemberAttribute.Value;
-                    if (transformedName != null && !transformedName.Equals(name, StringComparison.Ordinal))
+                    if (string.IsNullOrEmpty(transformedName))
                     {
-                        if (nameTransformCache == null)
+                        continue;
+                    }
+
+                    if (!transformedName.Equals(name, StringComparison.Ordinal))
+                    {
+                        if (explicitName != null)
                         {
-                            nameTransformCache = new ConcurrentDictionary<string, string>(ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+                            if (WriteNameTransformDictionary == null)
+                            {
+                                WriteNameTransformDictionary = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+                            }
+
+                            WriteNameTransformDictionary[name] = explicitName;
                         }
 
-                        if (purpose == NamingPolicyPurpose.Read)
+                        if (ReadNameTransformDictionary == null)
                         {
-                            nameTransformCache[transformedName] = name;
+                            ReadNameTransformDictionary = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
                         }
-                        else
+
+                        ReadNameTransformDictionary[transformedName] = name;
+                    }
+
+                    if (!transformedName.Equals(name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (ReadNameIgnoreCaseTransformDictionary == null)
                         {
-                            nameTransformCache[name] = transformedName;
+                            ReadNameIgnoreCaseTransformDictionary = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                         }
+
+                        ReadNameIgnoreCaseTransformDictionary[transformedName] = name;
                     }
                 }
-
-                return nameTransformCache;
             }
-        }
 
-        private enum NamingPolicyPurpose
-        {
-            Write,
-            Read,
+            public ConcurrentDictionary<string, string>? WriteNameTransformDictionary { get; }
+
+            public ConcurrentDictionary<string, string>? ReadNameTransformDictionary { get; }
+
+            public ConcurrentDictionary<string, string>? ReadNameIgnoreCaseTransformDictionary { get; }
         }
     }
 }

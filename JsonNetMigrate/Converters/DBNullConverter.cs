@@ -12,12 +12,14 @@ namespace JsonNetMigrate.Json.Converters
         /// <inheritdoc />
         public override DBNull? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType == JsonTokenType.Null)
+            var tokenType = reader.TokenType;
+
+            if (tokenType == JsonTokenType.Null)
             {
                 return DBNull.Value;
             }
 
-            if (reader.TokenType == JsonTokenType.String)
+            if (tokenType == JsonTokenType.String)
             {
                 var valueString = reader.GetString();
                 if (!string.IsNullOrEmpty(valueString))
@@ -25,7 +27,6 @@ namespace JsonNetMigrate.Json.Converters
                     throw new JsonException();
                 }
 
-                // We're returning null instead of DBNull.Value For compatibility with Json.NET
                 return null;
             }
 
@@ -35,10 +36,7 @@ namespace JsonNetMigrate.Json.Converters
         /// <inheritdoc />
         public override void Write(Utf8JsonWriter writer, DBNull? value, JsonSerializerOptions options)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
+            if (writer == null) throw new ArgumentNullException(nameof(writer));
 
             writer.WriteNullValue();
         }
