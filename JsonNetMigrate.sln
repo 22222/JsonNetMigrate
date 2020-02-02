@@ -10,6 +10,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
+		.github\workflows\build.yml = .github\workflows\build.yml
 		Directory.Build.props = Directory.Build.props
 		LICENSE = LICENSE
 		README.md = README.md
@@ -20,7 +21,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonNetMigrate.Tests", "Jso
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Testing", "Testing", "{5A492028-28B5-4C91-ABE3-4511B9966995}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonNetMigrate.SampleConsole", "JsonNetMigrate.SampleConsole\JsonNetMigrate.SampleConsole.csproj", "{FCBBC34F-3CA8-426B-B3CF-F9EBB64385BF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonNetMigrate.SampleConsole", "JsonNetMigrate.SampleConsole\JsonNetMigrate.SampleConsole.csproj", "{FCBBC34F-3CA8-426B-B3CF-F9EBB64385BF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

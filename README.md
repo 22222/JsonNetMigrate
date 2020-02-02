@@ -1,18 +1,22 @@
 A .NET library that assists with migrating from [Json.NET](https://github.com/JamesNK/Newtonsoft.Json) to [System.Text.Json](https://docs.microsoft.com/en-us/dotnet/api/system.text.json).
 
+![Build](https://github.com/22222/JsonNetMigrate/workflows/Build/badge.svg)
 
 # Overview
-This library provides a class that implements a subset of the Json.NET JsonConvert class's interface.  It also provides some JsonConverter classes to use with the System.Text.Json library to make it act more like Json.NET.
+This library provides a class that implements a subset of the Json.NET JsonConvert class's API.  It also provides some JsonConverter classes to use with the System.Text.Json library to make it act more like Json.NET.
 
-The goal of this library is just to make it easier to migrate to System.Text.Json.  This does not come close to 100% compatibility with Json.NET, and it is still missing a lot of features that Json.NET provides.
+The goal of this library is just to make it easier to migrate to System.Text.Json.  What's available should mostly be compatible with Json.NET, but it is missing a lot of features that Json.NET provides.
 
 
 # Installation
-This project does not currently have a NuGet package or any official releases.  The recommended way to use this is to just directly copy the parts of the source code you want.
+You have a couple options for installing this library:
+
+- Install the [NuGet package](https://www.nuget.org/packages/JsonNetMigrate/)
+- Copy the source code directly into your project
 
 This project is available under either of two licenses: the [Json.NET MIT license](LICENSE) or the [Unlicense](UNLICENSE).  The goal is to allow you to copy any of the source code from this library into your own project without having to worry about attribution or any other licensing complexity.
 
-Note that the interfaces and some comments are based on the Json.NET library, and some test files that are based on Json.NET code have their own License section.
+Note that the API and some comments are based on the Json.NET library, and some test files that are based on Json.NET code have their own License comment header.
 
 
 # Getting Started

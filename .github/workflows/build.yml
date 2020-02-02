@@ -1,7 +1,8 @@
 name: Build
 
-on: [push]
-
+on:
+  push:
+    branches: master
 jobs:
   build:
     runs-on: windows-latest
@@ -19,12 +20,15 @@ jobs:
     
     - name: Test with dotnet
       run: dotnet test JsonNetMigrate.Tests --configuration Release --no-build
-    
+
+    - name: Publish with dotnet
+      run: dotnet publish JsonNetMigrate --output ./artifacts/publish --configuration Release --no-build --framework netstandard2.0 --self-contained false
+
     - name: Pack with dotnet
-      run: dotnet pack JsonNetMigrate --configuration Release --no-build
+      run: dotnet pack JsonNetMigrate --output ./artifacts/pack --configuration Release --no-build
 
     - name: Upload artifact
       uses: actions/upload-artifact@v1.0.0
       with:
-        name: Nupkg
-        path: JsonNetMigrate\bin\Release\*.nupkg
+        name: artifacts
+        path: ./artifacts/

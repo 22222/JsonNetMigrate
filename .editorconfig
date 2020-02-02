@@ -5,7 +5,7 @@ indent_style = space
 indent_size = 4
 end_of_line = crlf
 
-[*.{csproj,props,json,ruleset}]
+[*.{csproj,props,json,ruleset,yml}]
 indent_size = 2
 
 [*.cs]
